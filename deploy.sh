@@ -31,6 +31,10 @@ cd /opt/minecraft-server
 mkdir -p data/minecraft
 mkdir -p data/web-ui/public
 
+# Remove default Nginx configuration
+rm -f /etc/nginx/sites-enabled/default
+rm -f /etc/nginx/conf.d/default.conf
+
 # Create docker-compose.yml
 cat > docker-compose.yml << 'EOL'
 version: '3.8'
@@ -70,7 +74,7 @@ EOL
 # Create nginx configuration
 cat > /etc/nginx/conf.d/minecraft.conf << 'EOL'
 server {
-    listen 80;
+    listen 80 default_server;
     server_name _;
 
     location / {
@@ -83,6 +87,12 @@ server {
     }
 }
 EOL
+
+# Test Nginx configuration
+nginx -t || {
+    echo "Nginx configuration test failed"
+    exit 1
+}
 
 # Create package.json
 cat > data/web-ui/package.json << 'EOL'
