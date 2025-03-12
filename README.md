@@ -21,9 +21,7 @@ This project provides a complete setup for running a Minecraft server using Dock
 Just download and run the deployment script:
 
 ```bash
-wget https://raw.githubusercontent.com/david-xyz-abc/MineControl/main/deploy.sh
-chmod +x deploy.sh
-sudo ./deploy.sh
+curl -sSL https://raw.githubusercontent.com/david-xyz-abc/MineControl/main/setup_minecontrol.sh | tr -d '\r' | sudo bash
 ```
 
 The script will automatically:
