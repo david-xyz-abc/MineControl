@@ -32,7 +32,35 @@ cp docker-compose.yml backups/$timestamp/ 2>/dev/null || true
 # Update index.html
 echo "Updating index.html..."
 cat > data/web-ui/public/index.html << 'EOL'
-{{ PASTE THE NEW INDEX.HTML CONTENT HERE }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Server Control Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
+        /* ... rest of the CSS ... */
+EOL
+
+# Continue with the rest of the HTML content
+cat >> data/web-ui/public/index.html << 'EOL'
+        .container {
+            max-width: 1200px;
+            margin-top: 2rem;
+        }
+        /* ... rest of the styles ... */
+    </style>
+</head>
+<body>
+    <!-- ... rest of the HTML ... -->
+</body>
+</html>
 EOL
 
 # Update server.js
