@@ -31,9 +31,11 @@ cd /opt/minecraft-server
 mkdir -p data/minecraft
 mkdir -p data/web-ui/public
 
-# Remove default Nginx configuration
+# Remove ALL default Nginx configurations
 rm -f /etc/nginx/sites-enabled/default
+rm -f /etc/nginx/sites-available/default
 rm -f /etc/nginx/conf.d/default.conf
+rm -f /etc/nginx/conf.d/default
 
 # Create docker-compose.yml
 cat > docker-compose.yml << 'EOL'
@@ -72,10 +74,44 @@ services:
 EOL
 
 # Create nginx configuration
+cat > /etc/nginx/nginx.conf << 'EOL'
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 768;
+}
+
+http {
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+EOL
+
 cat > /etc/nginx/conf.d/minecraft.conf << 'EOL'
 server {
     listen 80 default_server;
+    listen [::]:80 default_server;
     server_name _;
+    
+    access_log /var/log/nginx/minecraft-access.log;
+    error_log /var/log/nginx/minecraft-error.log;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -84,6 +120,8 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 EOL
@@ -295,11 +333,23 @@ chown -R 1000:1000 data/minecraft
 echo "Starting services..."
 docker-compose up -d
 
-# Configure and restart Nginx
-systemctl enable nginx
-systemctl restart nginx
+# Ensure Nginx is completely restarted
+echo "Restarting Nginx..."
+systemctl stop nginx
+sleep 2
+systemctl start nginx
+systemctl status nginx
 
 echo "Deployment complete!"
 echo "You can access the web UI at http://your-server-ip"
 echo "Minecraft server is running on default port 25565"
-echo "IMPORTANT: Remember to change the RCON password in both docker-compose.yml and data/web-ui/server.js" 
+echo "IMPORTANT: Remember to change the RCON password in both docker-compose.yml and data/web-ui/server.js"
+
+# Check if web UI is accessible
+echo "Checking if web UI is accessible..."
+sleep 5
+if curl -s http://localhost > /dev/null; then
+    echo "Web UI is accessible!"
+else
+    echo "Warning: Web UI might not be accessible. Check nginx logs with: tail -f /var/log/nginx/error.log"
+fi 
