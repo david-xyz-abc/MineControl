@@ -3,103 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft Server Control</title>
+    <title>Minecraft Server Control Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f0f0;
+            background-color: #2c3e50;
+            color: #ecf0f1;
         }
         .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin-top: 2rem;
         }
-        .status {
-            margin-bottom: 20px;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .online {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .offline {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        input[type="text"] {
-            width: 70%;
-            padding: 8px;
-            margin-right: 10px;
-        }
-        button {
-            padding: 8px 15px;
-            background-color: #007bff;
-            color: white;
+        .card {
+            background-color: #34495e;
             border: none;
-            border-radius: 3px;
-            cursor: pointer;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        button:hover {
-            background-color: #0056b3;
+        .card-header {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            font-weight: bold;
         }
-        #response {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 3px;
+        .status-card {
+            transition: all 0.3s ease;
+        }
+        .status-online {
+            border-left: 5px solid #2ecc71;
+        }
+        .status-offline {
+            border-left: 5px solid #e74c3c;
+        }
+        .command-history {
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #2c3e50;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+        .command-entry {
+            padding: 0.5rem;
+            border-bottom: 1px solid #34495e;
+        }
+        .command-entry:last-child {
+            border-bottom: none;
+        }
+        .command-time {
+            color: #95a5a6;
+            font-size: 0.8rem;
+        }
+        .command-text {
+            color: #3498db;
+        }
+        .command-response {
+            color: #2ecc71;
+        }
+        .quick-commands button {
+            margin: 0.25rem;
+        }
+        .player-list {
+            list-style: none;
+            padding: 0;
+        }
+        .player-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: #2c3e50;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+        }
+        .player-avatar {
+            width: 32px;
+            height: 32px;
+            margin-right: 1rem;
+        }
+        .server-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .stat-item {
+            background-color: #2c3e50;
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3498db;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Minecraft Server Control</h1>
-        <div id="serverStatus" class="status">Checking server status...</div>
-        
-        <h2>Server Control</h2>
-        <div>
-            <input type="text" id="command" placeholder="Enter server command...">
-            <button onclick="sendCommand()">Send Command</button>
+        <h1 class="text-center mb-4">
+            <i class="fas fa-cube me-2"></i>Minecraft Server Control Panel
+        </h1>
+
+        <!-- Server Status Card -->
+        <div class="card status-card" id="statusCard">
+            <div class="card-header">
+                <i class="fas fa-server me-2"></i>Server Status
+            </div>
+            <div class="card-body">
+                <div id="serverStatus">Checking server status...</div>
+                <div class="server-stats mt-3">
+                    <div class="stat-item">
+                        <div class="stat-label">Players Online</div>
+                        <div class="stat-value" id="playerCount">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Uptime</div>
+                        <div class="stat-value" id="uptime">0:00:00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">TPS</div>
+                        <div class="stat-value" id="tps">20.0</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="response"></div>
+
+        <!-- Player List Card -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-users me-2"></i>Online Players
+            </div>
+            <div class="card-body">
+                <ul class="player-list" id="playerList">
+                    <!-- Players will be added here dynamically -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Command Console Card -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-terminal me-2"></i>Command Console
+            </div>
+            <div class="card-body">
+                <div class="quick-commands mb-3">
+                    <button class="btn btn-sm btn-primary" onclick="sendQuickCommand('time set day')">
+                        <i class="fas fa-sun me-1"></i>Set Day
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="sendQuickCommand('weather clear')">
+                        <i class="fas fa-cloud-sun me-1"></i>Clear Weather
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="sendQuickCommand('difficulty peaceful')">
+                        <i class="fas fa-dove me-1"></i>Peaceful Mode
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="sendQuickCommand('kill @e[type=!player]')">
+                        <i class="fas fa-skull me-1"></i>Clear Entities
+                    </button>
+                </div>
+                <div class="input-group mb-3">
+                    <input type="text" id="command" class="form-control" placeholder="Enter server command...">
+                    <button class="btn btn-primary" onclick="sendCommand()">
+                        <i class="fas fa-paper-plane me-1"></i>Send
+                    </button>
+                </div>
+                <div class="command-history" id="commandHistory">
+                    <!-- Command history will be added here -->
+                </div>
+            </div>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Check server status every 30 seconds
-        function checkStatus() {
-            fetch('/api/status')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    const statusDiv = document.getElementById('serverStatus');
-                    statusDiv.className = `status ${data.status}`;
-                    if (data.status === 'online') {
-                        statusDiv.textContent = `Server Status: ONLINE ${data.players || ''}`;
-                    } else {
-                        statusDiv.textContent = `Server Status: OFFLINE (${data.error || 'Unknown error'})`;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    const statusDiv = document.getElementById('serverStatus');
-                    statusDiv.className = 'status offline';
-                    statusDiv.textContent = `Server Status: ERROR (${error.message})`;
-                });
+        let startTime = Date.now();
+        let commandHistory = [];
+
+        function updateUptime() {
+            const uptimeElement = document.getElementById('uptime');
+            const uptime = Math.floor((Date.now() - startTime) / 1000);
+            const hours = Math.floor(uptime / 3600);
+            const minutes = Math.floor((uptime % 3600) / 60);
+            const seconds = uptime % 60;
+            uptimeElement.textContent = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
-        // Send command to server
+        function updatePlayerList(players) {
+            const playerList = document.getElementById('playerList');
+            playerList.innerHTML = '';
+            
+            if (players && players.length > 0) {
+                players.forEach(player => {
+                    const li = document.createElement('li');
+                    li.className = 'player-item';
+                    li.innerHTML = `
+                        <img src="https://mc-heads.net/avatar/${player}" class="player-avatar">
+                        <span>${player}</span>
+                        <div class="ms-auto">
+                            <button class="btn btn-sm btn-warning me-1" onclick="sendQuickCommand('tp ${player} ~ ~1 ~')">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="sendQuickCommand('kick ${player}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                    playerList.appendChild(li);
+                });
+            } else {
+                playerList.innerHTML = '<div class="text-muted text-center">No players online</div>';
+            }
+        }
+
+        function addToCommandHistory(command, response, success) {
+            const history = document.getElementById('commandHistory');
+            const entry = document.createElement('div');
+            entry.className = 'command-entry';
+            entry.innerHTML = `
+                <div class="command-time">${new Date().toLocaleTimeString()}</div>
+                <div class="command-text">> ${command}</div>
+                <div class="command-response ${success ? 'text-success' : 'text-danger'}">${response}</div>
+            `;
+            history.appendChild(entry);
+            history.scrollTop = history.scrollHeight;
+            
+            // Keep only last 50 commands
+            commandHistory.push({ command, response, timestamp: Date.now() });
+            if (commandHistory.length > 50) {
+                commandHistory.shift();
+            }
+        }
+
+        function sendQuickCommand(command) {
+            document.getElementById('command').value = command;
+            sendCommand();
+        }
+
         function sendCommand() {
             const commandInput = document.getElementById('command');
             const command = commandInput.value;
             
+            if (!command) return;
+
             fetch('/api/command', {
                 method: 'POST',
                 headers: {
@@ -109,20 +253,76 @@
             })
             .then(response => response.json())
             .then(data => {
-                const responseDiv = document.getElementById('response');
-                responseDiv.textContent = data.success ? data.response : `Error: ${data.error}`;
+                addToCommandHistory(command, data.success ? data.response : `Error: ${data.error}`, data.success);
                 commandInput.value = '';
             })
             .catch(error => {
+                addToCommandHistory(command, 'Error: Failed to send command', false);
                 console.error('Error:', error);
-                const responseDiv = document.getElementById('response');
-                responseDiv.textContent = 'Error: Failed to send command';
             });
         }
 
-        // Initial status check and set interval
+        function checkStatus() {
+            fetch('/api/status')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const statusCard = document.getElementById('statusCard');
+                    const statusDiv = document.getElementById('serverStatus');
+                    statusCard.className = `card status-card status-${data.status}`;
+                    
+                    if (data.status === 'online') {
+                        // Parse player list from response
+                        const playerMatch = data.players.match(/There are \d+ of a max of \d+ players online: (.+)/);
+                        const players = playerMatch ? playerMatch[1].split(', ') : [];
+                        
+                        document.getElementById('playerCount').textContent = players.length;
+                        statusDiv.innerHTML = `
+                            <div class="alert alert-success mb-0">
+                                <i class="fas fa-check-circle me-2"></i>Server is Online
+                            </div>
+                        `;
+                        updatePlayerList(players);
+                    } else {
+                        document.getElementById('playerCount').textContent = '0';
+                        statusDiv.innerHTML = `
+                            <div class="alert alert-danger mb-0">
+                                <i class="fas fa-times-circle me-2"></i>Server is Offline
+                                <div class="small">${data.error || 'Unknown error'}</div>
+                            </div>
+                        `;
+                        updatePlayerList([]);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const statusCard = document.getElementById('statusCard');
+                    const statusDiv = document.getElementById('serverStatus');
+                    statusCard.className = 'card status-card status-offline';
+                    statusDiv.innerHTML = `
+                        <div class="alert alert-danger mb-0">
+                            <i class="fas fa-times-circle me-2"></i>Connection Error
+                            <div class="small">${error.message}</div>
+                        </div>
+                    `;
+                });
+        }
+
+        // Handle command input with Enter key
+        document.getElementById('command').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendCommand();
+            }
+        });
+
+        // Initial status check and set intervals
         checkStatus();
         setInterval(checkStatus, 5000);
+        setInterval(updateUptime, 1000);
     </script>
 </body>
 </html> 
