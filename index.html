@@ -72,17 +72,26 @@
         // Check server status every 30 seconds
         function checkStatus() {
             fetch('/api/status')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     const statusDiv = document.getElementById('serverStatus');
                     statusDiv.className = `status ${data.status}`;
-                    statusDiv.textContent = `Server Status: ${data.status.toUpperCase()} ${data.players || ''}`;
+                    if (data.status === 'online') {
+                        statusDiv.textContent = `Server Status: ONLINE ${data.players || ''}`;
+                    } else {
+                        statusDiv.textContent = `Server Status: OFFLINE (${data.error || 'Unknown error'})`;
+                    }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     const statusDiv = document.getElementById('serverStatus');
                     statusDiv.className = 'status offline';
-                    statusDiv.textContent = 'Server Status: ERROR';
+                    statusDiv.textContent = `Server Status: ERROR (${error.message})`;
                 });
         }
 
@@ -113,7 +122,7 @@
 
         // Initial status check and set interval
         checkStatus();
-        setInterval(checkStatus, 30000);
+        setInterval(checkStatus, 5000);
     </script>
 </body>
 </html> 
