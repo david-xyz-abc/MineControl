@@ -32,17 +32,34 @@ docker-compose up -d
 echo "Starting Nginx..."
 systemctl start nginx
 
-# Check services status
-echo "Checking services status..."
-sleep 5
+echo "Waiting for services to initialize..."
+# Increase initial wait time to allow for proper initialization
+sleep 15
 
-# Verify Minecraft container
-if docker ps | grep -q "mc-server"; then
-    echo "Minecraft server container is running!"
-else
-    echo "Warning: Minecraft server container failed to start"
-    echo "Check logs with: docker logs mc-server"
-fi
+# Verify Minecraft container with more thorough checks
+echo "Checking services status..."
+MAX_ATTEMPTS=12
+ATTEMPT=1
+
+while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+    if docker ps | grep -q "mc-server"; then
+        # Check if server is actually ready by looking for "Done" in logs
+        if docker logs mc-server 2>&1 | grep -q "Done"; then
+            echo "Minecraft server is fully initialized!"
+            break
+        fi
+    fi
+    
+    if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+        echo "Warning: Minecraft server initialization timed out"
+        echo "Check logs with: docker logs mc-server"
+        exit 1
+    fi
+    
+    echo "Waiting for Minecraft server to initialize... (Attempt $ATTEMPT/$MAX_ATTEMPTS)"
+    sleep 10
+    ATTEMPT=$((ATTEMPT + 1))
+done
 
 # Verify web UI container
 if docker ps | grep -q "mc-web-ui"; then
@@ -60,14 +77,25 @@ else
     echo "Check logs with: tail -f /var/log/nginx/error.log"
 fi
 
-# Verify web UI accessibility
+# Verify web UI accessibility with retry mechanism
 echo "Checking if web UI is accessible..."
-if curl -s http://localhost > /dev/null; then
-    echo "Web UI is accessible at http://your-server-ip"
-    echo "Minecraft server is available on port 25565"
-else
-    echo "Warning: Web UI might not be accessible"
-    echo "Check nginx logs with: tail -f /var/log/nginx/error.log"
-fi
+ATTEMPT=1
+while [ $ATTEMPT -le 6 ]; do
+    if curl -s http://localhost > /dev/null; then
+        echo "Web UI is accessible at http://your-server-ip"
+        echo "Minecraft server is available on port 25565"
+        break
+    fi
+    
+    if [ $ATTEMPT -eq 6 ]; then
+        echo "Warning: Web UI is not accessible after multiple attempts"
+        echo "Check nginx logs with: tail -f /var/log/nginx/error.log"
+        exit 1
+    fi
+    
+    echo "Waiting for web UI to become accessible... (Attempt $ATTEMPT/6)"
+    sleep 5
+    ATTEMPT=$((ATTEMPT + 1))
+done
 
 echo "Server startup complete!"
