@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Server Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .status {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .online {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .offline {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 8px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minecraft Server Control</h1>
+        <div id="serverStatus" class="status">Checking server status...</div>
+        
+        <h2>Server Control</h2>
+        <div>
+            <input type="text" id="command" placeholder="Enter server command...">
+            <button onclick="sendCommand()">Send Command</button>
+        </div>
+        <div id="response"></div>
+    </div>
+
+    <script>
+        // Check server status every 30 seconds
+        function checkStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('serverStatus');
+                    statusDiv.className = `status ${data.status}`;
+                    statusDiv.textContent = `Server Status: ${data.status.toUpperCase()} ${data.players || ''}`;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const statusDiv = document.getElementById('serverStatus');
+                    statusDiv.className = 'status offline';
+                    statusDiv.textContent = 'Server Status: ERROR';
+                });
+        }
+
+        // Send command to server
+        function sendCommand() {
+            const commandInput = document.getElementById('command');
+            const command = commandInput.value;
+            
+            fetch('/api/command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ command }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const responseDiv = document.getElementById('response');
+                responseDiv.textContent = data.success ? data.response : `Error: ${data.error}`;
+                commandInput.value = '';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const responseDiv = document.getElementById('response');
+                responseDiv.textContent = 'Error: Failed to send command';
+            });
+        }
+
+        // Initial status check and set interval
+        checkStatus();
+        setInterval(checkStatus, 30000);
+    </script>
+</body>
+</html> 
