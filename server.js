@@ -4,6 +4,7 @@ const path = require('path');
 
 const app = express();
 const port = 3000;
+const debug = true;
 
 // Serve static files
 app.use(express.static('public'));
@@ -11,7 +12,7 @@ app.use(express.json());
 
 // RCON configuration
 const rcon = new Rcon({
-    host: "localhost",
+    host: "minecraft",
     port: 25575,
     password: "your_secure_password"
 });
@@ -23,15 +24,30 @@ async function connectRcon() {
         console.log('Connected to Minecraft RCON');
     } catch (error) {
         console.error('Failed to connect to RCON:', error);
+        // Try to reconnect after 5 seconds
+        setTimeout(connectRcon, 5000);
     }
 }
 
+// Add reconnection logic
+rcon.on('end', () => {
+    console.log('RCON connection closed, attempting to reconnect...');
+    setTimeout(connectRcon, 5000);
+});
+
 // API endpoints
 app.get('/api/status', async (req, res) => {
+    if (debug) console.log('Status check requested');
     try {
+        if (!rcon.connected) {
+            if (debug) console.log('RCON not connected, attempting to connect...');
+            await connectRcon();
+        }
         const response = await rcon.send('list');
+        if (debug) console.log('RCON response:', response);
         res.json({ status: 'online', players: response });
     } catch (error) {
+        if (debug) console.error('Status check error:', error);
         res.json({ status: 'offline', error: error.message });
     }
 });
