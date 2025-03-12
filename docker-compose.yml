@@ -6,12 +6,14 @@ services:
     container_name: mc-server
     ports:
       - "25565:25565"
+      - "25575:25575"
     environment:
       - EULA=TRUE
       - MEMORY=2G
       - TYPE=PAPER
       - ENABLE_RCON=true
       - RCON_PASSWORD=your_secure_password
+      - RCON_PORT=25575
     volumes:
       - ./data/minecraft:/data
     restart: unless-stopped
@@ -29,4 +31,11 @@ services:
     command: sh -c "npm install && npm start"
     restart: unless-stopped
     depends_on:
-      - minecraft 
+      - minecraft
+    environment:
+      - MINECRAFT_HOST=minecraft
+      - RCON_PASSWORD=your_secure_password
+
+networks:
+  default:
+    name: minecraft-network
