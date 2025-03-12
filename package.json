@@ -1,0 +1,14 @@
+{
+  "name": "minecraft-web-ui",
+  "version": "1.0.0",
+  "description": "Web UI for Minecraft Server Control",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "rcon-client": "^4.2.3",
+    "socket.io": "^4.4.1"
+  }
+} 
