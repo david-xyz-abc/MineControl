@@ -47,14 +47,12 @@ services:
     container_name: mc-server
     ports:
       - "25565:25565"
-      - "25575:25575"
     environment:
       - EULA=TRUE
       - MEMORY=2G
       - TYPE=PAPER
       - ENABLE_RCON=true
       - RCON_PASSWORD=your_secure_password
-      - RCON_PORT=25575
     volumes:
       - ./data/minecraft:/data
     restart: unless-stopped
@@ -73,13 +71,6 @@ services:
     restart: unless-stopped
     depends_on:
       - minecraft
-    environment:
-      - MINECRAFT_HOST=minecraft
-      - RCON_PASSWORD=your_secure_password
-
-networks:
-  default:
-    name: minecraft-network
 EOL
 
 # Create nginx configuration
@@ -167,13 +158,12 @@ const path = require('path');
 
 const app = express();
 const port = 3000;
-const debug = true;
 
 app.use(express.static('public'));
 app.use(express.json());
 
 const rcon = new Rcon({
-    host: "minecraft",
+    host: "localhost",
     port: 25575,
     password: "your_secure_password"
 });
@@ -184,27 +174,14 @@ async function connectRcon() {
         console.log('Connected to Minecraft RCON');
     } catch (error) {
         console.error('Failed to connect to RCON:', error);
-        setTimeout(connectRcon, 5000);
     }
 }
 
-rcon.on('end', () => {
-    console.log('RCON connection closed, attempting to reconnect...');
-    setTimeout(connectRcon, 5000);
-});
-
 app.get('/api/status', async (req, res) => {
-    if (debug) console.log('Status check requested');
     try {
-        if (!rcon.connected) {
-            if (debug) console.log('RCON not connected, attempting to connect...');
-            await connectRcon();
-        }
         const response = await rcon.send('list');
-        if (debug) console.log('RCON response:', response);
         res.json({ status: 'online', players: response });
     } catch (error) {
-        if (debug) console.error('Status check error:', error);
         res.json({ status: 'offline', error: error.message });
     }
 });
